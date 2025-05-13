@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.2.0",
-    "@heroicons/react": "^2.1.1",
+    "@headlessui/react": "^2.2.3",
+    "@heroicons/react": "^2.2.0",
     "@prisma/client": "^5.22.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/nodemailer": "^6.4.17",
