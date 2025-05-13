@@ -6,6 +6,8 @@ import Image from 'next/image';
 import PricingModal from './components/PricingModal';
 import DemoModal from './components/DemoModal';
 import CodeModal from './components/CodeModal';
+import FAQChat from './components/FAQChat';
+import TestChat from './components/TestChat';
 
 const plans = [
   {
@@ -565,45 +567,19 @@ export default function Home() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-24 bg-gradient-to-br from-white via-violet-50 to-blue-100 animate-fade-in">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-4 animate-slide-up">Perguntas Frequentes</h2>
-            <p className="mt-4 text-xl text-gray-600 animate-fade-in">
-              Encontre respostas para perguntas comuns sobre nossa solução de chat
+      <section id="faq" className="py-20 bg-gradient-to-br from-white via-violet-50 to-blue-100">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-violet-600 to-blue-500 bg-clip-text text-transparent">
+              Perguntas Frequentes
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Tire suas dúvidas sobre nosso sistema de chat de forma interativa
             </p>
           </div>
-          <div className="max-w-3xl mx-auto">
-            <div className="space-y-8">
-              {/* FAQ Item 1 */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 animate-fade-in hover:shadow-2xl transition-all transform hover:scale-[1.02]">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Como funciona o chat com IA?</h3>
-                <p className="text-gray-600">
-                  Nosso chat com IA usa processamento avançado de linguagem natural para entender e responder às consultas dos clientes. Ele aprende com as interações para fornecer respostas mais precisas e úteis ao longo do tempo.
-                </p>
-              </div>
-              {/* FAQ Item 2 */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 animate-fade-in delay-100 hover:shadow-2xl transition-all transform hover:scale-[1.02]">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Posso personalizar o widget de chat?</h3>
-                <p className="text-gray-600">
-                  Sim! Você pode personalizar a aparência, comportamento e respostas do widget de chat para corresponder à sua marca e necessidades de negócios. Nossos planos Pro e Empresarial oferecem opções avançadas de personalização.
-                </p>
-              </div>
-              {/* FAQ Item 3 */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 animate-fade-in delay-200 hover:shadow-2xl transition-all transform hover:scale-[1.02]">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Existe um limite para o número de mensagens?</h3>
-                <p className="text-gray-600">
-                  O plano Gratuito inclui até 100 mensagens por mês. Os planos Pro e Empresarial oferecem mensagens ilimitadas para lidar com todas as suas interações com clientes.
-                </p>
-              </div>
-              {/* FAQ Item 4 */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 animate-fade-in delay-300 hover:shadow-2xl transition-all transform hover:scale-[1.02]">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Como começar?</h3>
-                <p className="text-gray-600">
-                  Começar é fácil! Basta se inscrever em um plano, copiar o snippet de código fornecido e colá-lo em seu site. O widget de chat estará ativo e pronto para uso em minutos.
-                </p>
-              </div>
-            </div>
+          
+          <div className="max-w-4xl mx-auto">
+            <FAQChat />
           </div>
         </div>
       </section>

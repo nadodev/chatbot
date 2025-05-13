@@ -20,7 +20,7 @@ model Products {
   price       Float
   in_stock    Boolean  @default(true)
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
 }
 
 model Chat {
@@ -33,7 +33,7 @@ model Chat {
   behavior    Json     @default("{}")
   status      String   @default("active")
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
 }
 
 model ChatSource {
@@ -43,7 +43,16 @@ model ChatSource {
   name      String
   content   String   @db.Text
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([chatId])
+}
+
+model FAQ {
+  id        Int      @id @default(autoincrement())
+  question  String   @db.Text
+  answer    String   @db.Text
+  category  String   @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
