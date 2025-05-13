@@ -3,7 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function FAQChat() {
+interface FAQChatProps {
+  variant?: 'floating' | 'button';
+}
+
+export default function FAQChat({ variant = 'floating' }: FAQChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [chatHistory, setChatHistory] = useState<Array<{ type: 'user' | 'bot', content: string }>>([]);
@@ -90,6 +94,20 @@ export default function FAQChat() {
     setShowSuggestions(false);
     inputRef.current?.focus();
   };
+
+  if (variant === 'button') {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-gradient-to-r from-violet-600 to-blue-500 shadow-md hover:from-violet-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-all transform hover:scale-105 active:scale-95"
+      >
+        <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+        Abrir Chat de Suporte
+      </button>
+    );
+  }
 
   return (
     <div className="fixed bottom-4 right-4 z-50">

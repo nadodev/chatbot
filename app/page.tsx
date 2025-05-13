@@ -6,8 +6,8 @@ import Image from 'next/image';
 import PricingModal from './components/PricingModal';
 import DemoModal from './components/DemoModal';
 import CodeModal from './components/CodeModal';
+import FAQModal from './components/FAQModal';
 import FAQChat from './components/FAQChat';
-import TestChat from './components/TestChat';
 
 const plans = [
   {
@@ -47,6 +47,7 @@ export default function Home() {
   const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null);
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [isFAQModalOpen, setIsFAQModalOpen] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -573,13 +574,18 @@ export default function Home() {
             <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-violet-600 to-blue-500 bg-clip-text text-transparent">
               Perguntas Frequentes
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-gray-600 max-w-2xl mx-auto mb-8">
               Tire suas dúvidas sobre nosso sistema de chat de forma interativa
             </p>
-          </div>
-          
-          <div className="max-w-4xl mx-auto">
-            <FAQChat />
+            <button
+              onClick={() => setIsFAQModalOpen(true)}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-gradient-to-r from-violet-600 to-blue-500 shadow-md hover:from-violet-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-all transform hover:scale-105 active:scale-95"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              Ver Todas as Perguntas
+            </button>
           </div>
         </div>
       </section>
@@ -676,6 +682,14 @@ export default function Home() {
         isOpen={isCodeModalOpen}
         onClose={() => setIsCodeModalOpen(false)}
       />
+
+      <FAQModal
+        isOpen={isFAQModalOpen}
+        onClose={() => setIsFAQModalOpen(false)}
+      />
+
+      {/* Chat flutuante */}
+      <FAQChat />
     </main>
   );
 }

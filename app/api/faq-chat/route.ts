@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const prisma = new PrismaClient();
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
 // Lista de stopwords em português
 const stopwords = new Set([
@@ -87,36 +89,53 @@ export async function POST(request: Request) {
   try {
     const { message } = await request.json();
 
-    // Buscar todas as FAQs do banco de dados
-    const faqs = await prisma.fAQ.findMany();
-
-    // Encontrar a FAQ mais relevante
-    let bestMatch = null;
-    let highestSimilarity = 0;
-
-    for (const faq of faqs) {
-      const similarity = calculateSimilarity(message, faq.question);
-      if (similarity > highestSimilarity) {
-        highestSimilarity = similarity;
-        bestMatch = faq;
+    // Buscar FAQs relevantes
+    const relevantFAQs = await prisma.fAQ.findMany({
+      where: {
+        OR: [
+          {
+            question: {
+              contains: message
+            }
+          },
+          {
+            answer: {
+              contains: message
+            }
+          }
+        ]
       }
-    }
-
-    // Se a similaridade for muito baixa, retornar uma resposta padrão
-    if (highestSimilarity < 0.15) { // Reduzido o limiar para 0.15
-      return NextResponse.json({
-        response: "Desculpe, não encontrei uma resposta específica para sua pergunta. Por favor, tente reformular ou entre em contato com nosso suporte para mais informações."
-      });
-    }
-
-    return NextResponse.json({
-      response: bestMatch?.answer || "Não encontrei uma resposta específica para sua pergunta."
     });
 
+    // Preparar o contexto para o Gemini
+    const context = relevantFAQs.map(faq => 
+      `Pergunta: ${faq.question}\nResposta: ${faq.answer}`
+    ).join('\n\n');
+
+    // Criar o prompt para o Gemini
+    const prompt = `Com base nas seguintes FAQs e na pergunta do usuário, forneça uma resposta útil e informativa:
+
+FAQs:
+${context}
+
+Pergunta do usuário: ${message}
+
+Por favor, forneça uma resposta que:
+1. Seja clara e direta
+2. Use as informações das FAQs quando relevante
+3. Mantenha um tom profissional e amigável
+4. Se não houver FAQs relevantes, forneça uma resposta geral e útil`;
+
+    // Gerar resposta com o Gemini
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const result = await model.generateContent(prompt);
+    const response = result.response.text();
+
+    return NextResponse.json({ response });
   } catch (error) {
-    console.error('Erro ao processar pergunta:', error);
+    console.error('Erro ao processar mensagem:', error);
     return NextResponse.json(
-      { error: 'Erro ao processar sua pergunta' },
+      { error: 'Erro ao processar mensagem' },
       { status: 500 }
     );
   }
