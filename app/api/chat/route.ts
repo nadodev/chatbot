@@ -1,86 +1,100 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { NextResponse } from "next/server";
-import { getProductResponse } from "@/app/lib/db";
+import { NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { PrismaClient } from '@prisma/client';
 
-// Create a Google AI client
+const prisma = new PrismaClient();
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const { messages } = await req.json();
+    const { messages, chatId } = await request.json();
 
-    if (!messages || !Array.isArray(messages)) {
-      throw new Error("Messages array is required");
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return NextResponse.json(
+        { error: 'No messages provided' },
+        { status: 400 }
+      );
     }
 
-    // Get the last user message
-    const lastUserMessage = messages
-      .filter((m: any) => m.role === 'user')
-      .pop()?.content;
+    const lastMessage = messages[messages.length - 1];
 
-    if (!lastUserMessage) {
-      throw new Error("No user message found");
-    }
-
-    // Check if the message is about products
-    const isProductQuery = lastUserMessage.toLowerCase().includes('product') ||
-                          lastUserMessage.toLowerCase().includes('produto') ||
-                          lastUserMessage.toLowerCase().includes('preço') ||
-                          lastUserMessage.toLowerCase().includes('price') ||
-                          lastUserMessage.toLowerCase().includes('list') ||
-                          lastUserMessage.toLowerCase().includes('lista');
-
-    let responseText;
-
-    if (isProductQuery) {
-      // Use LangChain to get product information
-      responseText = await getProductResponse(lastUserMessage);
-    } else {
-      // Use Google AI for general chat
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      
-      // Prepare the chat history
-      const history = messages.slice(0, -1).map((m: any) => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }]
-      }));
-
-      // Start chat with history
-      const chat = model.startChat({
-        history: history,
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
+    // Get chat sources if chatId is provided
+    let sourcesContext = '';
+    if (chatId) {
+      const sources = await prisma.chatSource.findMany({
+        where: {
+          chatId,
         },
       });
 
-      // Generate response
-      const result = await chat.sendMessage(lastUserMessage);
-      const response = await result.response;
-      responseText = response.text();
+      if (sources.length > 0) {
+        sourcesContext = `Here is the relevant information from the chat's knowledge base:
+
+${sources.map(source => `Source: ${source.name}
+Content: ${source.content}`).join('\n\n')}
+
+Please use this information to provide accurate and relevant responses.`;
+      }
     }
 
-    if (!responseText) {
-      throw new Error("No response from AI model");
+    // Check if it's a product query
+    const isProductQuery = lastMessage.content.toLowerCase().includes('produto') ||
+      lastMessage.content.toLowerCase().includes('preço') ||
+      lastMessage.content.toLowerCase().includes('price') ||
+      lastMessage.content.toLowerCase().includes('list');
+
+    if (isProductQuery) {
+      const products = await prisma.products.findMany();
+      const productsInfo = products.map(product => `
+        Name: ${product.name}
+        Description: ${product.description}
+        Price: ${product.price}
+        Stock: ${product.stock}
+      `).join('\n');
+
+      const prompt = `${sourcesContext}
+
+Here are the available products:
+
+${productsInfo}
+
+Please answer the following question about our products: ${lastMessage.content}`;
+
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const result = await model.generateContent(prompt);
+      const response = result.response.text();
+
+      return NextResponse.json({
+        id: Date.now().toString(),
+        content: response,
+        role: 'assistant',
+        timestamp: new Date().toISOString(),
+      });
     }
 
-    // Return a simple JSON response
+    // For general chat queries
+    const chatHistory = messages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+    const prompt = `${sourcesContext}
+
+Chat history:
+${chatHistory}
+
+Please provide a helpful response to the last message.`;
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const result = await model.generateContent(prompt);
+    const response = result.response.text();
+
     return NextResponse.json({
       id: Date.now().toString(),
+      content: response,
       role: 'assistant',
-      content: responseText,
-      createdAt: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
-    console.error("Error in chat API:", error);
+    console.error('Error processing chat message:', error);
     return NextResponse.json(
-      { 
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error"
-      },
+      { error: 'Failed to process chat message' },
       { status: 500 }
     );
   }

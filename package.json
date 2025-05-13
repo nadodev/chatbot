@@ -7,29 +7,40 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build:chat": "node scripts/build-chat.js",
-    "prisma:seed": "ts-node prisma/seed.ts"
-  },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "format": "prettier --write .",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@prisma/client": "^6.7.0",
-    "ai": "^4.3.15",
-    "next": "15.3.2",
-    "prisma": "^6.7.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@google/generative-ai": "^0.2.0",
+    "@heroicons/react": "^2.1.1",
+    "@prisma/client": "^5.22.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/nodemailer": "^6.4.17",
+    "ai": "^2.2.35",
+    "bcryptjs": "^3.0.2",
+    "framer-motion": "^12.11.0",
+    "next": "14.1.0",
+    "nodemailer": "^7.0.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "esbuild": "^0.25.4",
-    "tailwindcss": "^4",
-    "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "@types/node": "^20.11.19",
+    "@types/react": "^18.2.57",
+    "@types/react-dom": "^18.2.19",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.1.0",
+    "postcss": "^8.4.35",
+    "prettier": "^3.2.5",
+    "prisma": "^5.10.0",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.3.3"
   }
 }
