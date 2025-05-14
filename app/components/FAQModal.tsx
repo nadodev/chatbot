@@ -20,6 +20,8 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
   const [chatHistory, setChatHistory] = useState<Array<{ type: 'user' | 'bot', content: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [message, setMessage] = useState('');
+  const [activeTab, setActiveTab] = useState<'categories' | 'chat'>('categories');
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -66,6 +68,14 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (message.trim()) {
+      handleQuestionClick(message);
+      setMessage('');
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -80,92 +90,184 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex h-[90vh]">
-              {/* Sidebar com categorias e perguntas */}
-              <div className="w-1/3 border-r border-gray-200 overflow-y-auto">
-                <div className="p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Perguntas Frequentes</h2>
-                  {isLoadingCategories ? (
-                    <div className="flex justify-center items-center h-40">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {categories.map(category => (
-                        <div key={category.id}>
-                          <h3 
-                            className={`text-lg font-semibold mb-3 cursor-pointer ${
-                              selectedCategory === category.id ? 'text-violet-600' : 'text-gray-700'
-                            }`}
-                            onClick={() => setSelectedCategory(category.id)}
-                          >
-                            {category.title}
-                          </h3>
-                          {selectedCategory === category.id && (
-                            <div className="space-y-2">
-                              {category.questions.map((question, index) => (
-                                <button
-                                  key={index}
-                                  onClick={() => handleQuestionClick(question)}
-                                  className="w-full text-left p-3 rounded-lg hover:bg-violet-50 text-gray-600 hover:text-violet-600 transition-colors"
-                                >
-                                  {question}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+            {/* Cabeçalho */}
+            <div className="bg-gradient-to-r from-violet-600 to-blue-500 p-4 text-white flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold">Perguntas Frequentes</h2>
+                <p className="text-sm opacity-90">Escolha uma categoria ou converse com nosso assistente</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                title="Fechar"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Tabs de navegação */}
+            <div className="border-b border-gray-200">
+              <div className="flex">
+                <button
+                  onClick={() => setActiveTab('categories')}
+                  className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
+                    activeTab === 'categories'
+                      ? 'text-violet-600 border-b-2 border-violet-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Categorias
+                </button>
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
+                    activeTab === 'chat'
+                      ? 'text-violet-600 border-b-2 border-violet-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Chat
+                </button>
+              </div>
+            </div>
+
+            {/* Conteúdo Principal */}
+            <div className="flex-1 overflow-hidden">
+              {/* Aba de Categorias */}
+              <div className={`h-full ${activeTab === 'categories' ? 'block' : 'hidden'}`}>
+                <div className="h-full flex flex-col md:flex-row overflow-hidden">
+                  {/* Lista de Categorias */}
+                  <div className="w-full md:w-1/3 bg-gray-50 p-4 border-r border-gray-200 overflow-y-auto">
+                    <div className="space-y-2">
+                      {categories.map((category) => (
+                        <button
+                          key={category.id}
+                          onClick={() => setSelectedCategory(category.id)}
+                          className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                            selectedCategory === category.id
+                              ? 'bg-violet-100 text-violet-700'
+                              : 'hover:bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {category.title}
+                        </button>
                       ))}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Lista de Perguntas */}
+                  <div className="flex-1 p-4 overflow-y-auto">
+                    <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                      {categories.find(c => c.id === selectedCategory)?.title || 'Perguntas'}
+                    </h3>
+                    <div className="space-y-2">
+                      {categories
+                        .find(c => c.id === selectedCategory)
+                        ?.questions.map((question, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              handleQuestionClick(question);
+                              setActiveTab('chat');
+                            }}
+                            className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+                          >
+                            {question}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Área do chat */}
-              <div className="flex-1 flex flex-col">
-                <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-                  <h3 className="text-xl font-semibold text-gray-900">Chat de Suporte</h3>
-                  <button
-                    onClick={() => setChatHistory([])}
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-violet-600 transition-colors"
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Limpar Chat
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                  {chatHistory.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              {/* Aba de Chat */}
+              <div className={`h-full ${activeTab === 'chat' ? 'block' : 'hidden'}`}>
+                <div className="h-full flex flex-col">
+                  {/* Cabeçalho do chat */}
+                  <div className="bg-gray-50 p-4 flex justify-between items-center border-b border-gray-200">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800">Chat</h3>
+                      <p className="text-sm text-gray-600">Converse com nosso assistente</p>
+                    </div>
+                    <button
+                      onClick={() => setChatHistory([])}
+                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                      title="Limpar chat"
                     >
-                      <div
-                        className={`max-w-[80%] rounded-lg p-3 ${
-                          msg.type === 'user'
-                            ? 'bg-violet-600 text-white'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {msg.content}
+                      <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Container do chat */}
+                  <div className="flex-1 relative">
+                    {/* Histórico do chat com rolagem */}
+                    <div className="absolute inset-0 overflow-y-auto p-4 pb-20">
+                      <div className="space-y-4">
+                        {chatHistory.map((msg, index) => (
+                          <div
+                            key={index}
+                            className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div
+                              className={`max-w-[85%] rounded-lg p-3 whitespace-pre-wrap break-words ${
+                                msg.type === 'user'
+                                  ? 'bg-violet-600 text-white'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              {msg.content}
+                            </div>
+                          </div>
+                        ))}
+                        {isLoading && (
+                          <div className="flex justify-start">
+                            <div className="bg-gray-100 rounded-lg p-3 text-gray-800">
+                              <div className="flex space-x-2">
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-gray-100 rounded-lg p-3 text-gray-800">
-                        <div className="flex space-x-2">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
-                        </div>
-                      </div>
+
+                    {/* Input do chat fixo */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+                      <form onSubmit={handleSubmit} className="flex gap-2">
+                        <textarea
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          placeholder="Digite sua mensagem..."
+                          className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none min-h-[40px] max-h-[120px] overflow-y-auto"
+                          rows={1}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSubmit(e);
+                            }
+                          }}
+                        />
+                        <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="px-4 py-2 bg-gradient-to-r from-violet-600 to-blue-500 text-white rounded-lg hover:from-violet-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all self-end"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                        </button>
+                      </form>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>

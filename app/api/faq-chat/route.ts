@@ -8,7 +8,7 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 // Lista de stopwords em português
 const stopwords = new Set([
   'o', 'a', 'os', 'as', 'um', 'uma', 'uns', 'umas',
-  'e', 'é', 'é', 'são', 'está', 'estão',
+  'e', 'é', 'são', 'está', 'estão',
   'de', 'da', 'do', 'das', 'dos',
   'em', 'no', 'na', 'nos', 'nas',
   'com', 'por', 'para', 'pelo', 'pela', 'pelos', 'pelas',
@@ -34,85 +34,65 @@ const stopwords = new Set([
   'quase', 'já', 'ainda', 'sempre', 'nunca', 'jamais',
   'agora', 'antes', 'depois', 'hoje', 'ontem', 'amanhã',
   'aqui', 'ali', 'lá', 'cá', 'acolá',
-  'sim', 'não', 'não',
+  'sim', 'não',
   'pois', 'porém', 'mas', 'contudo', 'todavia', 'entretanto',
   'portanto', 'assim', 'logo', 'então',
-  'porque', 'pois', 'que', 'quando', 'enquanto',
-  'se', 'caso', 'embora', 'conquanto',
-  'quanto', 'quanto mais', 'quanto menos',
-  'tanto', 'tanto mais', 'tanto menos',
-  'como', 'assim como', 'tal como',
-  'que', 'o que', 'a que', 'os que', 'as que',
-  'quem', 'o quem', 'a quem', 'os quem', 'as quem',
-  'qual', 'o qual', 'a qual', 'os quais', 'as quais',
-  'cujo', 'cuja', 'cujos', 'cujas',
-  'onde', 'aonde', 'donde',
-  'quando', 'desde', 'até', 'durante',
-  'por', 'para', 'a', 'ante', 'após', 'até', 'com', 'contra',
-  'de', 'desde', 'em', 'entre', 'para', 'perante', 'por',
-  'sem', 'sob', 'sobre', 'trás'
+  'caso', 'embora', 'conquanto'
 ]);
 
-// Função para remover acentos
-function removeAccents(str: string): string {
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const importantKeywords = [
+  'preço', 'valor', 'custo', 'plano', 'planos', 'quanto', 'custa',
+  'suporte', 'mensagens', 'limite', 'personalizar', 'site', 'criação',
+  'idioma', 'linguagem', 'conversa', 'integração', 'whatsapp', 'proposta'
+];
+
+function removeAccents(str) {
+  return str.normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-// Função para tokenizar e limpar texto
-function tokenize(text: string): string[] {
+function tokenize(text) {
   return removeAccents(text.toLowerCase())
     .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')
     .split(/\s+/)
     .filter(word => word.length > 1 && !stopwords.has(word));
 }
 
-// Função para calcular similaridade entre strings
-function calculateSimilarity(str1: string, str2: string): number {
+function calculateSimilarity(str1, str2) {
   const words1 = tokenize(str1);
   const words2 = tokenize(str2);
-  
-  // Contar palavras em comum
+
   const commonWords = words1.filter(word => words2.includes(word));
-  
-  // Calcular pontuação baseada em palavras-chave
   const keywordScore = commonWords.length / Math.max(words1.length, words2.length);
-  
-  // Bônus para palavras-chave importantes
-  const importantKeywords = ['preço', 'valor', 'custo', 'plano', 'planos', 'quanto', 'custa'];
+
   const importantWordsFound = commonWords.filter(word => importantKeywords.includes(word));
   const keywordBonus = importantWordsFound.length * 0.2;
-  
+
   return Math.min(keywordScore + keywordBonus, 1);
 }
 
-export async function POST(request: Request) {
+export async function POST(request) {
   try {
     const { message } = await request.json();
 
-    // Buscar FAQs relevantes
-    const relevantFAQs = await prisma.fAQ.findMany({
-      where: {
-        OR: [
-          {
-            question: {
-              contains: message
-            }
-          },
-          {
-            answer: {
-              contains: message
-            }
-          }
-        ]
-      }
+    const allFAQs = await prisma.fAQ.findMany();
+
+    const faqsWithScore = allFAQs.map(faq => {
+      const score = Math.max(
+        calculateSimilarity(faq.question, message),
+        calculateSimilarity(faq.answer, message)
+      );
+      return { ...faq, score };
     });
 
-    // Preparar o contexto para o Gemini
+    const relevantFAQs = faqsWithScore
+      .filter(f => f.score > 0.2)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+
     const context = relevantFAQs.map(faq => 
       `Pergunta: ${faq.question}\nResposta: ${faq.answer}`
     ).join('\n\n');
 
-    // Criar o prompt para o Gemini
     const prompt = `Com base nas seguintes FAQs e na pergunta do usuário, forneça uma resposta útil e informativa:
 
 FAQs:
@@ -126,7 +106,6 @@ Por favor, forneça uma resposta que:
 3. Mantenha um tom profissional e amigável
 4. Se não houver FAQs relevantes, forneça uma resposta geral e útil`;
 
-    // Gerar resposta com o Gemini
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent(prompt);
     const response = result.response.text();
@@ -139,4 +118,4 @@ Por favor, forneça uma resposta que:
       { status: 500 }
     );
   }
-} 
+}

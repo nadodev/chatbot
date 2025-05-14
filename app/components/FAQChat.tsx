@@ -129,7 +129,7 @@ export default function FAQChat({ variant = 'floating' }: FAQChatProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-16 right-0 w-96 bg-white rounded-lg shadow-xl overflow-hidden"
+            className="fixed bottom-20 right-4 w-[calc(100%-2rem)] sm:w-96 md:w-[400px] lg:w-[450px] bg-white rounded-lg shadow-xl overflow-hidden z-50"
           >
             {/* Cabeçalho */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-4 text-white">
@@ -140,7 +140,7 @@ export default function FAQChat({ variant = 'floating' }: FAQChatProps) {
             {/* Histórico do chat */}
             <div 
               ref={chatContainerRef}
-              className="h-96 overflow-y-auto p-4 space-y-4"
+              className="h-[calc(100vh-16rem)] sm:h-96 overflow-y-auto p-4 space-y-4"
             >
               {chatHistory.map((msg, index) => (
                 <div
@@ -148,7 +148,7 @@ export default function FAQChat({ variant = 'floating' }: FAQChatProps) {
                   className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
+                    className={`max-w-[85%] rounded-lg p-3 ${
                       msg.type === 'user'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-800'
