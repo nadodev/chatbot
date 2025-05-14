@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { generateEmailHTML } from '@/app/templates/email-template.html';
 
 export async function POST(request: Request) {
   try {
@@ -17,28 +18,27 @@ export async function POST(request: Request) {
       },
     });
 
-    // Format the email content
-    const emailContent = `
-      New Plan Selection:
-      
-      Plan: ${plan.name}
-      Price: $${plan.price}/month
-      
-      Customer Information:
-      Name: ${chatResponses.name}
-      Email: ${chatResponses.email}
-      Company: ${chatResponses.company}
-      
-      Needs:
-      ${chatResponses.needs}
-    `;
+    // Format the chat history for the email template
+    const chatHistory = [
+      { type: 'bot' as const, content: `Plano Selecionado: ${plan.name}` },
+      { type: 'bot' as const, content: `Preço: $${plan.price}/mês` },
+      { type: 'bot' as const, content: `Empresa: ${chatResponses.company}` },
+      { type: 'bot' as const, content: `Necessidades:\n${chatResponses.needs}` }
+    ];
+
+    // Generate HTML email using our template
+    const html = generateEmailHTML(
+      chatHistory,
+      chatResponses.email,
+      chatResponses.name
+    );
 
     // Send the email
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: `"Suporte" <${process.env.SMTP_USER}>`,
       to: process.env.SALES_EMAIL,
-      subject: `New ${plan.name} Plan Selection`,
-      text: emailContent,
+      subject: `Nova Seleção de Plano ${plan.name}`,
+      html,
     });
 
     return NextResponse.json({ success: true });
