@@ -16,12 +16,15 @@ export default function LoginPage() {
     const userRole = localStorage.getItem('userRole');
     const hasPremium = localStorage.getItem('hasPremium') === 'true';
     
-    if (token && userRole === 'admin') {
-      router.push('/admin');
-    } else if (token && hasPremium) {
-      router.push('/dashboard');
-    } else if (token) {
-      router.push('/');
+    // Só redireciona se tiver todas as informações necessárias
+    if (token && userRole) {
+      if (userRole === 'admin') {
+        router.push('/admin');
+      } else if (hasPremium) {
+        router.push('/dashboard');
+      } else {
+        router.push('/');
+      }
     }
   }, [router]);
 

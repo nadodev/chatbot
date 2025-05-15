@@ -1,33 +1,27 @@
 import { NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import mysql, { RowDataPacket } from 'mysql2/promise';
 
-// Add CORS headers
+interface SchemaData {
+  [key: string]: {
+    columns: RowDataPacket[];
+    sampleData: RowDataPacket[];
+  };
+}
+
+// Configuração do CORS
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-  'Access-Control-Max-Age': '86400',
+  'Access-Control-Allow-Methods': 'GET, DELETE, PATCH, POST, PUT, OPTIONS',
+  'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
+  'Access-Control-Allow-Credentials': 'true',
 };
 
 // Handle OPTIONS request for CORS preflight
 export async function OPTIONS() {
-  return new Response(null, { 
-    status: 204, 
+  return new NextResponse(null, { 
+    status: 200, 
     headers: corsHeaders
   });
-}
-
-interface SchemaData {
-  [tableName: string]: {
-    columns: any[];
-    sampleData: any[];
-    metadata: {
-      possibleEntityName: string;
-      semanticKeywords: string[];
-      commonQueries: string[];
-    };
-    valueExamples?: {[column: string]: string[]};
-  };
 }
 
 export async function POST(request: Request) {
@@ -36,84 +30,43 @@ export async function POST(request: Request) {
 
     if (!connectionString) {
       return NextResponse.json(
-        { error: 'No connection string provided' },
-        { status: 400, headers: corsHeaders }
+        { message: 'String de conexão não fornecida' },
+        { status: 400 }
       );
     }
 
-    try {
-      // Create a connection
-      const connection = await mysql.createConnection(connectionString);
+    // Conectar ao banco
+    const connection = await mysql.createConnection(connectionString);
 
-      // If tables parameter is provided, get schema and sample data for those tables
-      if (tables && tables.length > 0) {
-        const schema: SchemaData = {};
+    if (tables) {
+      // Se tabelas específicas foram solicitadas, retornar schema delas
+      const schema: SchemaData = {};
+      for (const table of tables) {
+        const [columns] = await connection.query<RowDataPacket[]>(`DESCRIBE ${table}`);
+        const [sampleData] = await connection.query<RowDataPacket[]>(`SELECT * FROM ${table} LIMIT 3`);
         
-        for (const tableName of tables) {
-          // Get columns
-          const [columns] = await connection.query(`SHOW COLUMNS FROM ${tableName}`);
-          
-          // Get sample data (limited to 10 rows)
-          const [rows] = await connection.query(`SELECT * FROM ${tableName} LIMIT 10`);
-          
-          // Extract specific data examples for better prompt context
-          const valueExamples = extractValueExamples(columns as any[], rows as any[]);
-          
-          // Generate semantic metadata to help AI understand this table
-          const metadata = generateMetadata(tableName, columns as any[], rows as any[]);
-          
-          schema[tableName] = {
-            columns: columns as any[],
-            sampleData: rows as any[],
-            metadata,
-            valueExamples
-          };
-        }
-        
-        await connection.end();
-        
-        return NextResponse.json({
-          schema,
-          processedAt: new Date().toISOString(),
-        }, { headers: corsHeaders });
-      } 
-      // Otherwise just list the available tables
-      else {
-        // Get list of tables
-        const [tablesResult] = await connection.query('SHOW TABLES');
-        const tableList = [];
-        
-        for (const tableRow of Object.values(tablesResult as object[])) {
-          const tableName = Object.values(tableRow as object)[0] as string;
-          
-          // Get columns for this table
-          const [columnsResult] = await connection.query(`SHOW COLUMNS FROM ${tableName}`);
-          
-          tableList.push({
-            name: tableName,
-            columns: columnsResult as any[]
-          });
-        }
-        
-        await connection.end();
-        
-        return NextResponse.json({
-          tables: tableList,
-          processedAt: new Date().toISOString(),
-        }, { headers: corsHeaders });
+        schema[table] = {
+          columns,
+          sampleData
+        };
       }
-    } catch (dbError: any) {
-      console.error('Database error:', dbError);
-      return NextResponse.json(
-        { error: `Database connection error: ${dbError.message}` },
-        { status: 500, headers: corsHeaders }
-      );
+      
+      await connection.end();
+      return NextResponse.json({ schema });
+    } else {
+      // Se não foram especificadas tabelas, retornar lista de tabelas
+      const [result] = await connection.query<RowDataPacket[]>('SHOW TABLES');
+      await connection.end();
+
+      const tables = result.map(row => Object.values(row)[0] as string);
+
+      return NextResponse.json({ tables });
     }
   } catch (error) {
-    console.error('Error processing database request:', error);
+    console.error('Erro ao processar banco de dados:', error);
     return NextResponse.json(
-      { error: 'Failed to process database request' },
-      { status: 500, headers: corsHeaders }
+      { message: error instanceof Error ? error.message : 'Erro ao processar banco de dados' },
+      { status: 500 }
     );
   }
 }

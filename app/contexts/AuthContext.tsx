@@ -1,40 +1,25 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+import React, { createContext, useContext, ReactNode } from 'react';
 
 interface AuthContextType {
-  user: User | null;
-  signIn: (email: string) => Promise<void>;
-  signOut: () => void;
+  isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: true,
+  isLoading: false
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-
-  const signIn = async (email: string) => {
-    // Aqui você implementaria a lógica real de autenticação
-    // Por enquanto, vamos apenas simular um usuário
-    setUser({
-      id: '1',
-      name: 'Usuário Teste',
-      email: email
-    });
-  };
-
-  const signOut = () => {
-    setUser(null);
-  };
-
   return (
-    <AuthContext.Provider value={{ user, signIn, signOut }}>
+    <AuthContext.Provider 
+      value={{ 
+        isAuthenticated: true,
+        isLoading: false
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

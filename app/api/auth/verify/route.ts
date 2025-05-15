@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/app/lib/auth';
+import prisma from '@/app/lib/db';
 
 // Configuração do CORS
 const corsHeaders = {
@@ -42,10 +43,27 @@ export async function GET(request: Request) {
       );
     }
 
+    // Buscar o usuário com informações de assinatura
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: { subscription: true }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuário não encontrado' },
+        { 
+          status: 404,
+          headers: corsHeaders
+        }
+      );
+    }
+
     return NextResponse.json({
-      userId: decoded.userId,
-      email: decoded.email,
-      role: decoded.role,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      subscription: user.subscription,
     }, {
       headers: corsHeaders
     });

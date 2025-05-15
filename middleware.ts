@@ -12,14 +12,42 @@ const corsHeaders = {
 
 export async function middleware(request: NextRequest) {
   // Permitir acesso a rotas públicas e páginas da interface
+  const publicPaths = [
+    '/login',
+    '/register',
+    '/',
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/verify',
+    '/api/database/connect',
+    '/api/database/tables',
+    '/api/chats',
+    '/api/chats/:path*'
+  ];
+
+  // Se for uma rota pública, recurso estático ou rota de banco de dados, permite o acesso
   if (
-    !request.nextUrl.pathname.startsWith('/api/') ||
-    request.nextUrl.pathname.startsWith('/api/auth/login') ||
-    request.nextUrl.pathname.startsWith('/api/auth/register') ||
-    request.nextUrl.pathname.startsWith('/api/auth/verify') ||
+    publicPaths.some(path => {
+      if (path.includes(':path*')) {
+        const basePath = path.split(':')[0];
+        return request.nextUrl.pathname.startsWith(basePath);
+      }
+      return request.nextUrl.pathname === path;
+    }) ||
     request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname === '/'
+    request.nextUrl.pathname.startsWith('/static') ||
+    request.nextUrl.pathname.startsWith('/api/database/')
   ) {
+    const response = NextResponse.next();
+    // Adicionar headers CORS para rotas públicas
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
+  }
+
+  // Se não for uma rota da API, permite o acesso (rotas de páginas)
+  if (!request.nextUrl.pathname.startsWith('/api/')) {
     return NextResponse.next();
   }
 
@@ -101,5 +129,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/api/:path*',
+    '/admin/:path*',
+    '/dashboard/:path*'
   ],
 }; 

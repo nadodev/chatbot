@@ -37,31 +37,6 @@ model Products {
   updatedAt   DateTime @default(now()) @updatedAt
 }
 
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  password      String
-  role          String    @default("user") // "admin" ou "user"
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  subscription  Subscription?
-  chats         Chat[]
-}
-
-model Subscription {
-  id            String    @id @default(cuid())
-  userId        String    @unique
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  startDate     DateTime  @default(now())
-  endDate       DateTime
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  @@index([userId])
-}
-
 model Chat {
   id          String       @id @default(cuid())
   name        String
@@ -70,15 +45,14 @@ model Chat {
   greeting    String       @db.Text
   appearance  Json?        @default("{}")
   behavior    Json?        @default("{}")
+  dbConfig    Json?        @default("{}")
+  theme       Json?        @default("{\"primaryColor\":\"#6366f1\",\"secondaryColor\":\"#4f46e5\",\"effect\":\"fade\"}")
+  dataSource  String?      @default("database")
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   sources     ChatSource[]
   messages    Message[]
   config      ChatConfig?
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
 }
 
 model ChatSource {
