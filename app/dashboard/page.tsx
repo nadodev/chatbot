@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import React from 'react';
 
 interface Chat {
   id: string;
@@ -16,6 +17,8 @@ export default function Dashboard() {
   const router = useRouter();
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoadingChats, setIsLoadingChats] = useState(false);
+  const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [embedCode, setEmbedCode] = useState('');
 
   // Carregar chats
   useEffect(() => {
@@ -123,6 +126,35 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Modal de Embed */}
+      {showEmbedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+              onClick={() => setShowEmbedModal(false)}
+            >
+              ✕
+            </button>
+            <h2 className="text-lg font-semibold mb-4">Código de Embed</h2>
+            <textarea
+              className="w-full border rounded p-2 text-sm font-mono bg-gray-50 mb-4"
+              rows={4}
+              value={embedCode}
+              readOnly
+            />
+            <button
+              className="bg-violet-600 text-white px-4 py-2 rounded hover:bg-violet-700"
+              onClick={() => {
+                navigator.clipboard.writeText(embedCode);
+                alert('Código copiado!');
+              }}
+            >
+              Copiar código
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -191,6 +223,16 @@ export default function Dashboard() {
                         className="text-sm text-gray-600 hover:text-gray-900"
                       >
                         Editar
+                      </button>
+                      <button
+                        onClick={() => {
+                          const code = `<div id="chat-widget-container"></div>\n<script src="http://localhost:3000/api/widget/${chat.id}" async></script>`;
+                          setEmbedCode(code);
+                          setShowEmbedModal(true);
+                        }}
+                        className="text-sm text-violet-600 hover:text-violet-900"
+                      >
+                        Código Embed
                       </button>
                     </div>
                     <button
