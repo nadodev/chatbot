@@ -6,12 +6,41 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Buscar as configurações do chat
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/chats/${params.id}`);
-    const chat = await response.json();
+    console.log(`Widget solicitado para o chat ID: ${params.id}`);
+    
+    // Buscar as configurações do chat diretamente pelo Prisma
+    const chat = await prisma.chat.findUnique({
+      where: { id: params.id },
+    });
 
-    if (!response.ok) {
-      throw new Error('Chat não encontrado');
+    if (!chat) {
+      console.log(`Chat não encontrado: ${params.id}`);
+      return new NextResponse('Chat não encontrado', { status: 404 });
+    }
+
+    console.log(`Chat encontrado: ${chat.name}`);
+
+    // Tratamento seguro para os objetos JSON
+    let appearance = {};
+    let behavior = {};
+    let dbConfig = {};
+
+    try {
+      if (chat.appearance) appearance = JSON.parse(chat.appearance.toString());
+    } catch (e) {
+      console.error("Erro ao parsear appearance:", e);
+    }
+
+    try {
+      if (chat.behavior) behavior = JSON.parse(chat.behavior.toString());
+    } catch (e) {
+      console.error("Erro ao parsear behavior:", e);
+    }
+
+    try {
+      if (chat.dbConfig) dbConfig = JSON.parse(chat.dbConfig.toString());
+    } catch (e) {
+      console.error("Erro ao parsear dbConfig:", e);
     }
 
     // Gerar o código do widget
@@ -22,17 +51,17 @@ export async function GET(
 
         const chatConfig = ${JSON.stringify({
           id: params.id,
-          name: chat.name,
-          avatar: chat.avatar,
-          greeting: chat.greeting,
-          appearance: JSON.parse(chat.appearance),
-          behavior: JSON.parse(chat.behavior),
-          dbConfig: JSON.parse(chat.dbConfig)
+          name: chat.name || "Chat",
+          avatar: chat.avatar || "🤖",
+          greeting: chat.greeting || "Olá! Como posso ajudar?",
+          appearance,
+          behavior,
+          dbConfig
         })};
 
         // Criar o iframe do chat
         const iframe = document.createElement('iframe');
-        iframe.src = '${process.env.NEXT_PUBLIC_APP_URL}/chat/${params.id}';
+        iframe.src = '${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/chat/${params.id}';
         iframe.style.width = '100%';
         iframe.style.height = '600px';
         iframe.style.border = 'none';
@@ -52,6 +81,8 @@ export async function GET(
       })();
     `;
 
+    console.log("Widget gerado com sucesso");
+    
     return new NextResponse(widgetCode, {
       headers: {
         'Content-Type': 'application/javascript',
@@ -61,7 +92,7 @@ export async function GET(
   } catch (error) {
     console.error('Erro ao gerar widget:', error);
     return NextResponse.json(
-      { message: 'Erro ao gerar widget' },
+      { message: 'Erro ao gerar widget', error: String(error) },
       { status: 500 }
     );
   }

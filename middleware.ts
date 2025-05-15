@@ -22,7 +22,8 @@ export async function middleware(request: NextRequest) {
     '/api/database/connect',
     '/api/database/tables',
     '/api/chats',
-    '/api/chats/:path*'
+    '/api/chats/:path*',
+    '/api/widget/:path*'
   ];
 
   // Se for uma rota pública, recurso estático ou rota de banco de dados, permite o acesso
