@@ -1,25 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/app/lib/db';
-import { verifyToken, checkPremiumStatus } from '@/app/lib/auth';
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Chat, ChatSource, Message } from '@prisma/client';
+import { aiService } from '@/app/lib/ai';
 
 // Add CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*', // Permitir de qualquer origem para o widget
   'Access-Control-Allow-Methods': 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-  'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
+  'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
   'Access-Control-Allow-Credentials': 'true'
 };
-
-// Define the expected chat data structure with sources and messages
-interface ChatWithRelations extends Chat {
-  sources: ChatSource[];
-  messages: Message[];
-}
-
-// Initialize Google AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
 // Handle OPTIONS request for CORS preflight
 export async function OPTIONS() {
@@ -32,7 +21,7 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { chatId, message, config } = body;
+    const { chatId, message } = body;
 
     // Verifica se o chat existe e está ativo
     const chat = await prisma.chat.findUnique({
@@ -86,9 +75,12 @@ export async function POST(request: NextRequest) {
       Mantenha a resposta concisa e focada na pergunta do usuário.
     `;
 
-    // Gerar resposta usando o modelo
-    const result = await genAI.getGenerativeModel({ model: "gemini-pro" }).generateContent(prompt);
-    const response = result.response.text();
+    // Inicializar o serviço de IA se necessário
+    await aiService.initialize();
+
+    // Gerar resposta usando o serviço de IA
+    const result = await aiService.generateResponse(prompt);
+    const response = result.text;
 
     if (!response) {
       throw new Error("Sem resposta do modelo de IA");
@@ -119,24 +111,4 @@ export async function POST(request: NextRequest) {
       { status: 500, headers: corsHeaders }
     );
   }
-}
-
-// Função auxiliar para verificar se a mensagem parece ser uma pergunta sobre dados
-function containsDatabaseQuestion(message: string): boolean {
-  const dbKeywords = [
-    'listar', 'mostrar', 'exibir', 'quais', 'quantos', 'quanto', 'onde', 'quando',
-    'lista', 'buscar', 'encontrar', 'procurar', 'obter', 'selecionar',
-    'produtos', 'categorias', 'preço', 'valor', 'data', 'cliente', 'pedido',
-    'perguntas', 'respostas', 'dúvidas', 'faq'
-  ];
-  
-  const messageLower = message.toLowerCase();
-  
-  return dbKeywords.some(keyword => messageLower.includes(keyword));
-}
-
-// Função para obter o URL base
-function getBaseUrl() {
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}`;
-}
+} 

@@ -88,3 +88,12 @@ model FAQ {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 }
+
+model Settings {
+  id           Int      @id @default(1)
+  aiProvider   String   @default("google")
+  googleApiKey String?
+  openaiApiKey String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

@@ -23,18 +23,24 @@ export async function middleware(request: NextRequest) {
     '/api/database/tables',
     '/api/chats',
     '/api/chats/:path*',
-    '/api/widget/:path*'
+    '/api/widget/:path*',
+    '/api/chat/:path*',
+    '/api/widget-chat',
+    '/chat/:path*',
+    '/api/setup'
   ];
 
   // Se for uma rota pública, recurso estático ou rota de banco de dados, permite o acesso
+  const isPublicPath = publicPaths.some(path => {
+    if (path.includes(':path*')) {
+      const basePath = path.split(':')[0];
+      return request.nextUrl.pathname.startsWith(basePath);
+    }
+    return request.nextUrl.pathname === path;
+  });
+
   if (
-    publicPaths.some(path => {
-      if (path.includes(':path*')) {
-        const basePath = path.split(':')[0];
-        return request.nextUrl.pathname.startsWith(basePath);
-      }
-      return request.nextUrl.pathname === path;
-    }) ||
+    isPublicPath ||
     request.nextUrl.pathname.startsWith('/_next') ||
     request.nextUrl.pathname.startsWith('/static') ||
     request.nextUrl.pathname.startsWith('/api/database/')

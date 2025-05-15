@@ -23,19 +23,31 @@ export default async function ChatPage({ params }: ChatPageProps) {
   let dbConfig = {};
 
   try {
-    if (chat.appearance) appearance = JSON.parse(chat.appearance.toString());
+    if (chat.appearance) {
+      appearance = typeof chat.appearance === 'string'
+        ? JSON.parse(chat.appearance)
+        : chat.appearance;
+    }
   } catch (e) {
     console.error("Erro ao parsear appearance:", e);
   }
 
   try {
-    if (chat.behavior) behavior = JSON.parse(chat.behavior.toString());
+    if (chat.behavior) {
+      behavior = typeof chat.behavior === 'string'
+        ? JSON.parse(chat.behavior)
+        : chat.behavior;
+    }
   } catch (e) {
     console.error("Erro ao parsear behavior:", e);
   }
 
   try {
-    if (chat.dbConfig) dbConfig = JSON.parse(chat.dbConfig.toString());
+    if (chat.dbConfig) {
+      dbConfig = typeof chat.dbConfig === 'string'
+        ? JSON.parse(chat.dbConfig)
+        : chat.dbConfig;
+    }
   } catch (e) {
     console.error("Erro ao parsear dbConfig:", e);
   }

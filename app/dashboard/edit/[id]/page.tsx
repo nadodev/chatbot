@@ -93,18 +93,18 @@ export default function EditChat({ params }: { params: { id: string } }) {
           avatar: data.avatar,
           greeting: data.greeting,
           status: data.status,
-          appearance: data.appearance ? JSON.parse(data.appearance) : {
+          appearance: data.appearance || {
             primaryColor: '#6366f1',
             secondaryColor: '#4f46e5',
             effect: 'fade'
           },
-          behavior: data.behavior ? JSON.parse(data.behavior) : {
+          behavior: data.behavior || {
             temperature: 0.7,
             maxTokens: 150,
             aiProvider: 'google',
             model: 'gemini-2.0-flash'
           },
-          dbConfig: data.dbConfig ? JSON.parse(data.dbConfig) : {
+          dbConfig: data.dbConfig || {
             connectionString: '',
             selectedTables: []
           }

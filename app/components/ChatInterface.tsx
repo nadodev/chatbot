@@ -27,18 +27,20 @@ export default function ChatInterface({
     { role: 'assistant', content: greeting },
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     // Adiciona a mensagem do usuário
     setMessages((prev) => [...prev, { role: 'user', content: input }]);
     const userMessage = input;
     setInput('');
+    setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/widget-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,11 +48,6 @@ export default function ChatInterface({
         body: JSON.stringify({
           chatId,
           message: userMessage,
-          config: {
-            appearance,
-            behavior,
-            dbConfig,
-          },
         }),
       });
 
@@ -64,6 +61,8 @@ export default function ChatInterface({
         ...prev,
         { role: 'assistant', content: 'Desculpe, ocorreu um erro ao processar sua mensagem.' },
       ]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -105,13 +104,15 @@ export default function ChatInterface({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Digite sua mensagem..."
-            className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading}
+            className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
           >
-            Enviar
+            {isLoading ? 'Enviando...' : 'Enviar'}
           </button>
         </div>
       </form>
