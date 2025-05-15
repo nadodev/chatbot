@@ -6,6 +6,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatHistoryProvider } from './contexts/ChatHistoryContext';
 import { ChatWidgetProvider } from './contexts/ChatWidgetContext';
+import { Toaster } from 'sonner';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -48,6 +49,7 @@ export default function RootLayout({
               <ChatHistoryProvider>
                 <ChatWidgetProvider>
                   {children}
+                  <Toaster />
                 </ChatWidgetProvider>
               </ChatHistoryProvider>
             </AuthProvider>

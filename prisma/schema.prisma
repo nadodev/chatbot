@@ -18,7 +18,7 @@ model ChatConfig {
   chatId            String   @unique
   chat              Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   aiProvider        String   @default("google") // "google" ou "openai"
-  model             String   @default("gemini-2.0-flash") // modelo específico a ser usado
+  model             String   @default("gemini-1.5-flash")
   temperature       Float    @default(0.7)
   maxTokens         Int      @default(150)
   createdAt         DateTime @default(now())
@@ -38,46 +38,24 @@ model Products {
 }
 
 model Chat {
-  id          String       @id @default(cuid())
-  name        String
-  status      String       @default("active")
-  avatar      String       @default("🤖")
-  greeting    String       @db.Text
-  appearance  Json?        @default("{}")
-  behavior    Json?        @default("{}")
-  dbConfig    Json?        @default("{}")
-  theme       Json?        @default("{\"primaryColor\":\"#6366f1\",\"secondaryColor\":\"#4f46e5\",\"effect\":\"fade\"}")
-  dataSource  String?      @default("database")
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  sources     ChatSource[]
-  messages    Message[]
-  config      ChatConfig?
-}
-
-model ChatSource {
-  id        String   @id @default(cuid())
-  chatId    String
-  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  type      String   // "file" or "url"
+  id        String      @id @default(cuid())
   name      String
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@index([chatId])
+  avatar    String?
+  greeting  String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  messages  Message[]
+  config    ChatConfig?
 }
 
 model Message {
   id        String   @id @default(cuid())
+  content   String
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   chatId    String
   chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  content   String   @db.Text
-  role      String   // "user" or "assistant"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@index([chatId])
 }
 
 model FAQ {

@@ -2,252 +2,235 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import React from 'react';
+import Link from 'next/link';
+import { Dialog } from '@headlessui/react';
+import { 
+  ChartBarIcon, 
+  ChatBubbleLeftRightIcon, 
+  CogIcon,
+  DocumentDuplicateIcon,
+  ArrowTrendingUpIcon,
+  UserGroupIcon
+} from '@heroicons/react/24/outline';
+import ChatConfigForm from '@/app/components/ChatConfigForm';
 
-interface Chat {
-  id: string;
-  name: string;
-  status: 'active' | 'paused';
-  avatar: string;
-  greeting: string;
-  createdAt: string;
+interface ChatStats {
+  totalMessages: number;
+  activeChats: number;
+  averageResponseTime: number;
+  userSatisfaction: number;
 }
 
-export default function Dashboard() {
+interface ChatConfig {
+  id: string;
+  name: string;
+  aiProvider: string;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+}
+
+export default function DashboardPage() {
   const router = useRouter();
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [isLoadingChats, setIsLoadingChats] = useState(false);
-  const [showEmbedModal, setShowEmbedModal] = useState(false);
-  const [embedCode, setEmbedCode] = useState('');
+  const [stats, setStats] = useState<ChatStats>({
+    totalMessages: 0,
+    activeChats: 0,
+    averageResponseTime: 0,
+    userSatisfaction: 0
+  });
+  const [chats, setChats] = useState<ChatConfig[]>([]);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
 
-  // Carregar chats
   useEffect(() => {
-    const loadChats = async () => {
-      setIsLoadingChats(true);
-      try {
-        await fetchChats();
-      } catch (error) {
-        console.error('Erro ao carregar chats:', error);
-      } finally {
-        setIsLoadingChats(false);
-      }
-    };
-
-    loadChats();
+    // Carregar estatísticas
+    fetchStats();
+    // Carregar chats
+    fetchChats();
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/stats');
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error);
+    }
+  };
 
   const fetchChats = async () => {
     try {
       const response = await fetch('/api/chats');
-      if (!response.ok) {
-        throw new Error('Erro ao buscar chats');
-      }
-      
       const data = await response.json();
-      if (Array.isArray(data)) {
-        setChats(data);
-      } else {
-        console.error('Resposta inválida da API de chats:', data);
-        setChats([]);
-      }
+      setChats(data);
     } catch (error) {
-      console.error('Erro ao buscar chats:', error);
-      setChats([]);
-    }
-  };
-
-  const handleCreateChat = () => {
-    router.push('/dashboard/create');
-  };
-
-  const handleDeleteChat = async (id: string) => {
-    try {
-      const response = await fetch(`/api/chats?id=${id}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        setChats(chats.filter(chat => chat.id !== id));
-      }
-    } catch (error) {
-      console.error('Erro ao deletar chat:', error);
-    }
-  };
-
-  const handleDuplicateChat = async (chat: Chat) => {
-    try {
-      const response = await fetch('/api/chats', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: `${chat.name} (Cópia)`,
-          avatar: chat.avatar,
-          greeting: chat.greeting,
-        }),
-      });
-
-      if (response.ok) {
-        const newChat = await response.json();
-        setChats([...chats, newChat]);
-      }
-    } catch (error) {
-      console.error('Erro ao duplicar chat:', error);
-    }
-  };
-
-  const handleToggleStatus = async (id: string) => {
-    const chat = chats.find(c => c.id === id);
-    if (!chat) return;
-
-    try {
-      const response = await fetch(`/api/chats?id=${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status: chat.status === 'active' ? 'paused' : 'active',
-        }),
-      });
-
-      if (response.ok) {
-        setChats(chats.map(c => 
-          c.id === id 
-            ? { ...c, status: c.status === 'active' ? 'paused' : 'active' }
-            : c
-        ));
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar status do chat:', error);
+      console.error('Erro ao carregar chats:', error);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Modal de Embed */}
-      {showEmbedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full relative">
-            <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
-              onClick={() => setShowEmbedModal(false)}
-            >
-              ✕
-            </button>
-            <h2 className="text-lg font-semibold mb-4">Código de Embed</h2>
-            <textarea
-              className="w-full border rounded p-2 text-sm font-mono bg-gray-50 mb-4"
-              rows={4}
-              value={embedCode}
-              readOnly
-            />
-            <button
-              className="bg-violet-600 text-white px-4 py-2 rounded hover:bg-violet-700"
-              onClick={() => {
-                navigator.clipboard.writeText(embedCode);
-                alert('Código copiado!');
-              }}
-            >
-              Copiar código
-            </button>
-          </div>
-        </div>
-      )}
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-            <div className="flex space-x-4">
-              <button
-                onClick={handleCreateChat}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
-              >
-                Criar Novo Chat
-              </button>
-            </div>
+            <button
+              onClick={() => router.push('/settings')}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
+            >
+              <CogIcon className="h-5 w-5 mr-2" />
+              Configurações
+            </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isLoadingChats ? (
-          <div className="flex justify-center">
-            <div className="text-xl text-gray-600">Carregando chats...</div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {chats.map((chat) => (
-              <div
-                key={chat.id}
-                className="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200"
-              >
-                <div className="px-4 py-5 sm:p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <span className="text-2xl mr-2">{chat.avatar}</span>
-                      <h3 className="text-lg font-medium text-gray-900">{chat.name}</h3>
-                    </div>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        chat.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {chat.status === 'active' ? 'Ativo' : 'Pausado'}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-500">{chat.greeting}</p>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <ChatBubbleLeftRightIcon className="h-6 w-6 text-violet-600" />
                 </div>
-                <div className="px-4 py-4 sm:px-6">
-                  <div className="flex justify-between items-center">
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={() => handleToggleStatus(chat.id)}
-                        className="text-sm text-gray-600 hover:text-gray-900"
-                      >
-                        {chat.status === 'active' ? 'Pausar' : 'Ativar'}
-                      </button>
-                      <button
-                        onClick={() => handleDuplicateChat(chat)}
-                        className="text-sm text-gray-600 hover:text-gray-900"
-                      >
-                        Duplicar
-                      </button>
-                      <button
-                        onClick={() => router.push(`/dashboard/edit/${chat.id}`)}
-                        className="text-sm text-gray-600 hover:text-gray-900"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => {
-                          const code = `<div id="chat-widget-container"></div>\n<script src="http://localhost:3000/api/widget/${chat.id}" async></script>`;
-                          setEmbedCode(code);
-                          setShowEmbedModal(true);
-                        }}
-                        className="text-sm text-violet-600 hover:text-violet-900"
-                      >
-                        Código Embed
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteChat(chat.id)}
-                      className="text-sm text-red-600 hover:text-red-900"
-                    >
-                      Excluir
-                    </button>
-                  </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total de Mensagens</dt>
+                    <dd className="text-lg font-semibold text-gray-900">{stats.totalMessages}</dd>
+                  </dl>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
-        )}
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <UserGroupIcon className="h-6 w-6 text-violet-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Chats Ativos</dt>
+                    <dd className="text-lg font-semibold text-gray-900">{stats.activeChats}</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <ArrowTrendingUpIcon className="h-6 w-6 text-violet-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Tempo Médio de Resposta</dt>
+                    <dd className="text-lg font-semibold text-gray-900">{stats.averageResponseTime}s</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <ChartBarIcon className="h-6 w-6 text-violet-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Satisfação dos Usuários</dt>
+                    <dd className="text-lg font-semibold text-gray-900">{stats.userSatisfaction}%</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Chats List */}
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <h2 className="text-lg font-medium text-gray-900">Seus Chats</h2>
+            <button
+              onClick={() => router.push('/chat/new')}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-violet-600 hover:bg-violet-700"
+            >
+              Novo Chat
+            </button>
+          </div>
+          <div className="border-t border-gray-200">
+            <ul role="list" className="divide-y divide-gray-200">
+              {chats.map((chat) => (
+                <li key={chat.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <ChatBubbleLeftRightIcon className="h-8 w-8 text-violet-600" />
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-sm font-medium text-gray-900">{chat.name}</h3>
+                        <p className="text-sm text-gray-500">
+                          {chat.aiProvider} - {chat.model}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => {
+                          setSelectedChat(chat.id);
+                          setIsConfigOpen(true);
+                        }}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <CogIcon className="h-4 w-4 mr-1.5" />
+                        Configurar
+                      </button>
+                      <button
+                        onClick={() => router.push(`/dashboard/embed/${chat.id}`)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <DocumentDuplicateIcon className="h-4 w-4 mr-1.5" />
+                        Código
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </main>
+
+      {/* Config Modal */}
+      <Dialog
+        open={isConfigOpen}
+        onClose={() => setIsConfigOpen(false)}
+        className="fixed inset-0 z-10 overflow-y-auto"
+      >
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="fixed inset-0 bg-black bg-opacity-30" />
+          <div className="relative bg-white rounded-lg max-w-md w-full mx-4 p-6">
+            <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">
+              Configurações do Chat
+            </Dialog.Title>
+            {selectedChat && (
+              <ChatConfigForm
+                chatId={selectedChat}
+                onClose={() => setIsConfigOpen(false)}
+              />
+            )}
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 } 

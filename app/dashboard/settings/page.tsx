@@ -13,31 +13,31 @@ export default function SettingsPage() {
     googleApiKey: '',
     openaiApiKey: '',
   });
-
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Carregar configurações atuais
-    const loadSettings = async () => {
-      try {
-        const response = await fetch('/api/admin/settings');
-        if (response.ok) {
-          const data = await response.json();
-          setSettings(data);
+    // Carregar configurações existentes
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setSettings({
+            aiProvider: data.aiProvider || 'google',
+            googleApiKey: data.googleApiKey || '',
+            openaiApiKey: data.openaiApiKey || '',
+          });
         }
-      } catch (error) {
+      })
+      .catch(error => {
         console.error('Erro ao carregar configurações:', error);
         toast.error('Erro ao carregar configurações');
-      }
-    };
-
-    loadSettings();
+      });
   }, []);
 
   const handleSave = async () => {
-    setIsLoading(true);
+    setIsSaving(true);
     try {
-      const response = await fetch('/api/admin/settings', {
+      const response = await fetch('/api/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,14 +54,12 @@ export default function SettingsPage() {
       console.error('Erro ao salvar configurações:', error);
       toast.error('Erro ao salvar configurações');
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-6">Configurações</h1>
-
+    <div className="container mx-auto py-8">
       <Card>
         <CardHeader>
           <CardTitle>Configurações de IA</CardTitle>
@@ -74,46 +72,47 @@ export default function SettingsPage() {
               onValueChange={(value) => setSettings({ ...settings, aiProvider: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o provedor" />
+                <SelectValue placeholder="Selecione um provedor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="google">Google AI (Gemini)</SelectItem>
-                <SelectItem value="openai">OpenAI (GPT)</SelectItem>
+                <SelectItem value="google">Google AI</SelectItem>
+                <SelectItem value="openai">OpenAI</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {settings.aiProvider === 'google' && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Google API Key</label>
+              <label className="text-sm font-medium">Chave de API do Google</label>
               <Input
                 type="password"
                 value={settings.googleApiKey}
                 onChange={(e) => setSettings({ ...settings, googleApiKey: e.target.value })}
-                placeholder="Insira sua Google API Key"
+                placeholder="Insira sua chave de API do Google"
               />
             </div>
           )}
 
           {settings.aiProvider === 'openai' && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">OpenAI API Key</label>
+              <label className="text-sm font-medium">Chave de API da OpenAI</label>
               <Input
                 type="password"
                 value={settings.openaiApiKey}
                 onChange={(e) => setSettings({ ...settings, openaiApiKey: e.target.value })}
-                placeholder="Insira sua OpenAI API Key"
+                placeholder="Insira sua chave de API da OpenAI"
               />
             </div>
           )}
 
-          <Button 
-            onClick={handleSave} 
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? 'Salvando...' : 'Salvar Configurações'}
-          </Button>
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
