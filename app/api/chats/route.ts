@@ -3,54 +3,59 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// GET /api/chats - List all chats
+// GET - Listar todos os chats
 export async function GET() {
   try {
     const chats = await prisma.chat.findMany({
       orderBy: {
-        createdAt: 'desc',
-      },
+        createdAt: 'desc'
+      }
     });
-
     return NextResponse.json(chats);
   } catch (error) {
-    console.error('Error fetching chats:', error);
+    console.error('Erro ao buscar chats:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch chats' },
+      { error: 'Erro ao buscar chats' },
       { status: 500 }
     );
   }
 }
 
-// POST /api/chats - Create a new chat
+// POST - Criar novo chat
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
-    const { name, avatar, greeting, sources, appearance, behavior } = data;
+    const body = await request.json();
+    const { name, avatar, greeting, appearance, behavior } = body;
+
+    if (!name || !greeting) {
+      return NextResponse.json(
+        { error: 'Nome e saudação são obrigatórios' },
+        { status: 400 }
+      );
+    }
 
     const chat = await prisma.chat.create({
       data: {
         name,
-        avatar,
+        avatar: avatar || '🤖',
         greeting,
-        sources: sources || {},
-        appearance: appearance || {},
-        behavior: behavior || {},
-      },
+        appearance: appearance ? JSON.stringify(appearance) : "{}",
+        behavior: behavior ? JSON.stringify(behavior) : "{}"
+      }
     });
 
     return NextResponse.json(chat);
   } catch (error) {
-    console.error('Error creating chat:', error);
+    console.error('Erro ao criar chat:', error);
     return NextResponse.json(
-      { error: 'Failed to create chat' },
+      { error: 'Erro ao criar chat' },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/chats/:id - Update a chat
-export async function PUT(request: Request) {
+// PATCH /api/chats/:id - Update a chat
+export async function PATCH(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -63,7 +68,7 @@ export async function PUT(request: Request) {
     }
 
     const data = await request.json();
-    const { name, avatar, greeting, sources, appearance, behavior } = data;
+    const { name, avatar, greeting, appearance, behavior, status } = data;
 
     const chat = await prisma.chat.update({
       where: { id },
@@ -71,10 +76,10 @@ export async function PUT(request: Request) {
         name,
         avatar,
         greeting,
-        sources: sources || {},
-        appearance: appearance || {},
-        behavior: behavior || {},
-      },
+        status,
+        appearance: appearance ? JSON.stringify(appearance) : undefined,
+        behavior: behavior ? JSON.stringify(behavior) : undefined,
+      }
     });
 
     return NextResponse.json(chat);

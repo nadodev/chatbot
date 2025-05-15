@@ -1,9 +1,4 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const prisma = new PrismaClient();
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
 // Lista de stopwords em português
 const stopwords = new Set([
@@ -46,21 +41,49 @@ const importantKeywords = [
   'idioma', 'linguagem', 'conversa', 'integração', 'whatsapp', 'proposta'
 ];
 
-function removeAccents(str) {
+interface FAQ {
+  question: string;
+  answer: string;
+}
+
+const faqs: FAQ[] = [
+  {
+    question: "Como posso criar um novo chat?",
+    answer: "Para criar um novo chat, vá até o dashboard e clique no botão 'Criar Novo Chat' no canto superior direito. Siga as instruções na tela para configurar seu chat."
+  },
+  {
+    question: "Como posso personalizar meu chat?",
+    answer: "Você pode personalizar seu chat através das configurações disponíveis no dashboard. Clique no ícone de edição ao lado do chat que deseja personalizar."
+  },
+  {
+    question: "Como posso integrar o chat no meu site?",
+    answer: "Para integrar o chat no seu site, vá até o dashboard, encontre o chat desejado e clique no ícone de código (</>). Copie o código fornecido e cole-o no seu site."
+  },
+  {
+    question: "O chat suporta múltiplos idiomas?",
+    answer: "Sim, o chat suporta múltiplos idiomas. Você pode configurar o idioma nas configurações do chat."
+  },
+  {
+    question: "Como posso gerenciar as respostas do chat?",
+    answer: "Você pode gerenciar as respostas do chat através do painel de administração. Acesse as configurações do chat para adicionar, editar ou remover respostas."
+  }
+];
+
+function removeAccents(str: string): string {
   return str.normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-function tokenize(text) {
+function tokenize(text: string) {
   return removeAccents(text.toLowerCase())
     .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')
     .split(/\s+/)
     .filter(word => word.length > 1 && !stopwords.has(word));
 }
 
-function calculateSimilarity(str1, str2) {
+function calculateSimilarity(str1: string, str2: string): number {
   const words1 = tokenize(str1);
   const words2 = tokenize(str2);
-
+  
   const commonWords = words1.filter(word => words2.includes(word));
   const keywordScore = commonWords.length / Math.max(words1.length, words2.length);
 
@@ -70,51 +93,54 @@ function calculateSimilarity(str1, str2) {
   return Math.min(keywordScore + keywordBonus, 1);
 }
 
-export async function POST(request) {
+function findBestMatch(text: string): FAQ | null {
+  const normalizedText = removeAccents(text.toLowerCase());
+  
+  let bestMatch: FAQ | null = null;
+  let highestSimilarity = 0;
+
+  for (const faq of faqs) {
+    const normalizedQuestion = removeAccents(faq.question.toLowerCase());
+    const similarity = calculateSimilarity(normalizedText, normalizedQuestion);
+    
+    if (similarity > highestSimilarity) {
+      highestSimilarity = similarity;
+      bestMatch = faq;
+    }
+  }
+
+  return highestSimilarity > 0.6 ? bestMatch : null;
+}
+
+export async function POST(request: Request) {
   try {
     const { message } = await request.json();
-
-    const allFAQs = await prisma.fAQ.findMany();
-
-    const faqsWithScore = allFAQs.map(faq => {
-      const score = Math.max(
-        calculateSimilarity(faq.question, message),
-        calculateSimilarity(faq.answer, message)
+    
+    if (!message) {
+      return NextResponse.json(
+        { error: 'No message provided' },
+        { status: 400 }
       );
-      return { ...faq, score };
+    }
+
+    const bestMatch = findBestMatch(message);
+    
+    if (bestMatch) {
+      return NextResponse.json({
+        answer: bestMatch.answer,
+        question: bestMatch.question
+      });
+    }
+
+    return NextResponse.json({
+      answer: "Desculpe, não encontrei uma resposta específica para sua pergunta. Por favor, tente reformular ou entre em contato com nosso suporte.",
+      question: message
     });
 
-    const relevantFAQs = faqsWithScore
-      .filter(f => f.score > 0.2)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
-
-    const context = relevantFAQs.map(faq => 
-      `Pergunta: ${faq.question}\nResposta: ${faq.answer}`
-    ).join('\n\n');
-
-    const prompt = `Com base nas seguintes FAQs e na pergunta do usuário, forneça uma resposta útil e informativa:
-
-FAQs:
-${context}
-
-Pergunta do usuário: ${message}
-
-Por favor, forneça uma resposta que:
-1. Seja clara e direta
-2. Use as informações das FAQs quando relevante
-3. Mantenha um tom profissional e amigável
-4. Se não houver FAQs relevantes, forneça uma resposta geral e útil`;
-
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const result = await model.generateContent(prompt);
-    const response = result.response.text();
-
-    return NextResponse.json({ response });
   } catch (error) {
-    console.error('Erro ao processar mensagem:', error);
+    console.error('Error processing FAQ chat:', error);
     return NextResponse.json(
-      { error: 'Erro ao processar mensagem' },
+      { error: 'Failed to process message' },
       { status: 500 }
     );
   }

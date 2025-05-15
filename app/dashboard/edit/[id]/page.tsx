@@ -81,35 +81,61 @@ const animations = [
   { id: 'bounce', label: 'Quicar' },
 ];
 
+interface ChatData {
+  name: string;
+  avatar: string;
+  greeting: string;
+  status: 'active' | 'paused';
+}
+
 export default function EditChat({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [config, setConfig] = useState<ChatConfig>(defaultConfig);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState<ChatData>({
+    name: '',
+    avatar: '🤖',
+    greeting: '',
+    status: 'active'
+  });
 
   useEffect(() => {
-    // TODO: Fetch chat data from API
-    const fetchChat = async () => {
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+    fetchChat();
+  }, [params.id]);
+
+  const fetchChat = async () => {
+    try {
+      const response = await fetch(`/api/chats/${params.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setFormData(data);
+        
+        // Parse appearance and behavior from JSON strings
+        const appearance = data.appearance ? JSON.parse(data.appearance) : defaultConfig.appearance;
+        const behavior = data.behavior ? JSON.parse(data.behavior) : defaultConfig.behavior;
+        
         setConfig({
           ...defaultConfig,
           id: params.id,
-          name: 'Suporte do Site',
-          avatar: '🤖',
-          greeting: 'Olá! Como posso ajudar?',
+          name: data.name,
+          avatar: data.avatar,
+          greeting: data.greeting,
+          appearance,
+          behavior,
         });
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching chat:', error);
-        setLoading(false);
+      } else {
+        alert('Chat não encontrado');
+        router.push('/dashboard');
       }
-    };
-
-    fetchChat();
-  }, [params.id]);
+    } catch (error) {
+      console.error('Erro ao buscar chat:', error);
+      alert('Erro ao buscar chat');
+      router.push('/dashboard');
+    }
+  };
 
   const handleNext = () => {
     if (currentStep < 4) {
@@ -124,44 +150,31 @@ export default function EditChat({ params }: { params: { id: string } }) {
   };
 
   const handleSave = async () => {
-    // TODO: Implement save logic
-    router.push('/dashboard');
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setConfig({
-        ...config,
-        sources: {
-          ...config.sources,
-          files: Array.from(e.target.files),
+    try {
+      const response = await fetch(`/api/chats/${params.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          ...formData,
+          appearance: config.appearance,
+          behavior: config.behavior,
+        }),
       });
+
+      if (response.ok) {
+        router.push('/dashboard');
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Erro ao atualizar chat');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar chat:', error);
+      alert('Erro ao atualizar chat');
     }
   };
-
-  const handleUrlAdd = (url: string) => {
-    if (url && !config.sources.urls.includes(url)) {
-      setConfig({
-        ...config,
-        sources: {
-          ...config.sources,
-          urls: [...config.sources.urls, url],
-        },
-      });
-    }
-  };
-
-  const handleUrlRemove = (url: string) => {
-    setConfig({
-      ...config,
-      sources: {
-        ...config.sources,
-        urls: config.sources.urls.filter(u => u !== url),
-      },
-    });
-  };
-
+ 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -259,8 +272,8 @@ export default function EditChat({ params }: { params: { id: string } }) {
                   <input
                     type="text"
                     id="name"
-                    value={config.name}
-                    onChange={(e) => setConfig({ ...config, name: e.target.value })}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
                     placeholder="Ex: Suporte do meu site"
                   />
@@ -274,12 +287,12 @@ export default function EditChat({ params }: { params: { id: string } }) {
                     <input
                       type="text"
                       id="avatar"
-                      value={config.avatar}
-                      onChange={(e) => setConfig({ ...config, avatar: e.target.value })}
+                      value={formData.avatar}
+                      onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
                       className="block w-20 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
                       placeholder="🤖"
                     />
-                    <span className="text-2xl">{config.avatar}</span>
+                    <span className="text-2xl">{formData.avatar}</span>
                   </div>
                 </div>
 
@@ -289,8 +302,8 @@ export default function EditChat({ params }: { params: { id: string } }) {
                   </label>
                   <textarea
                     id="greeting"
-                    value={config.greeting}
-                    onChange={(e) => setConfig({ ...config, greeting: e.target.value })}
+                    value={formData.greeting}
+                    onChange={(e) => setFormData({ ...formData, greeting: e.target.value })}
                     rows={3}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
                     placeholder="Ex: Olá! Como posso ajudar?"
@@ -383,7 +396,7 @@ export default function EditChat({ params }: { params: { id: string } }) {
                         }`}
                         onClick={() => setConfig({
                           ...config,
-                          appearance: { ...config.appearance, position: position.id as any },
+                          appearance: { ...config.appearance, position: position.id as 'bottom-right' | 'floating' | 'popup' },
                         })}
                       >
                         <div className="flex items-center">
@@ -507,7 +520,7 @@ export default function EditChat({ params }: { params: { id: string } }) {
                         name="responseMode"
                         value="complete"
                         checked={config.behavior.responseMode === 'complete'}
-                        onChange={(e) => setConfig({
+                        onChange={() => setConfig({
                           ...config,
                           behavior: { ...config.behavior, responseMode: 'complete' },
                         })}
@@ -524,7 +537,7 @@ export default function EditChat({ params }: { params: { id: string } }) {
                         name="responseMode"
                         value="streaming"
                         checked={config.behavior.responseMode === 'streaming'}
-                        onChange={(e) => setConfig({
+                        onChange={() => setConfig({
                           ...config,
                           behavior: { ...config.behavior, responseMode: 'streaming' },
                         })}

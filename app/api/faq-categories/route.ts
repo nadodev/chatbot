@@ -3,6 +3,16 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+interface Category {
+  id: string;
+  title: string;
+  questions: string[];
+}
+
+interface CategoryAccumulator {
+  [key: string]: Category;
+}
+
 export async function GET() {
   try {
     // Buscar todas as FAQs do banco
@@ -13,7 +23,7 @@ export async function GET() {
     });
 
     // Agrupar FAQs por categoria
-    const categories = faqs.reduce((acc: any, faq) => {
+    const categories = faqs.reduce((acc: CategoryAccumulator, faq) => {
       const category = faq.category || 'Geral';
       if (!acc[category]) {
         acc[category] = {

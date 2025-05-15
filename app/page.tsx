@@ -202,7 +202,7 @@ export default function Home() {
             <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
               <div className="p-6 border-b border-gray-100">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Veja como funciona:</h3>
-                <p className="text-gray-600">Experimente nosso chatbot em ação com exemplos reais</p>
+                <p className="text-gray-600">Let&apos;s get started with your chatbot</p>
               </div>
               <div className="p-6 space-y-4">
                 <div className="flex items-start space-x-4">

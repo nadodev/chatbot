@@ -1,6 +1,22 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// Add CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+  'Access-Control-Max-Age': '86400',
+};
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS() {
+  return new Response(null, { 
+    status: 204, 
+    headers: corsHeaders
+  });
+}
+
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
 export async function POST(request: Request) {
@@ -10,7 +26,7 @@ export async function POST(request: Request) {
     if (!url) {
       return NextResponse.json(
         { error: 'No URL provided' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -20,7 +36,7 @@ export async function POST(request: Request) {
     } catch (error) {
       return NextResponse.json(
         { error: 'Invalid URL' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -29,7 +45,7 @@ export async function POST(request: Request) {
     if (!response.ok) {
       return NextResponse.json(
         { error: 'Failed to fetch URL content' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -48,12 +64,12 @@ ${text}`;
       url,
       content,
       processedAt: new Date().toISOString(),
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error processing URL:', error);
     return NextResponse.json(
       { error: 'Failed to process URL' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 } 

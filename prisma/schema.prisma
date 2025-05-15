@@ -13,6 +13,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model ChatConfig {
+  id                String   @id @default(cuid())
+  chatId            String   @unique
+  chat              Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  aiProvider        String   @default("google") // "google" ou "openai"
+  model             String   @default("gemini-2.0-flash") // modelo específico a ser usado
+  temperature       Float    @default(0.7)
+  maxTokens         Int      @default(150)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([chatId])
+}
+
 model Products {
   id          String   @id @default(cuid())
   name        String
@@ -23,25 +37,69 @@ model Products {
   updatedAt   DateTime @default(now()) @updatedAt
 }
 
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  role          String    @default("user") // "admin" ou "user"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  subscription  Subscription?
+  chats         Chat[]
+}
+
+model Subscription {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startDate     DateTime  @default(now())
+  endDate       DateTime
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+}
+
 model Chat {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   name        String
-  avatar      String
-  greeting    String   @db.Text
-  sources     Json     @default("[]")
-  appearance  Json     @default("{}")
-  behavior    Json     @default("{}")
-  status      String   @default("active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  status      String       @default("active")
+  avatar      String       @default("🤖")
+  greeting    String       @db.Text
+  appearance  Json?        @default("{}")
+  behavior    Json?        @default("{}")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  sources     ChatSource[]
+  messages    Message[]
+  config      ChatConfig?
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model ChatSource {
   id        String   @id @default(cuid())
   chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   type      String   // "file" or "url"
   name      String
   content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([chatId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  role      String   // "user" or "assistant"
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 

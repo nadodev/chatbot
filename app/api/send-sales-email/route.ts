@@ -5,7 +5,7 @@ import { generateEmailHTML } from '@/app/templates/email-template.html';
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const { plan, chatResponses, email } = data;
+    const { plan, chatResponses } = data;
 
     // Create a transporter using your email service credentials
     const transporter = nodemailer.createTransport({

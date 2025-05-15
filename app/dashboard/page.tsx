@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import ChatEmbed from '../components/ChatEmbed';
 
 interface Chat {
   id: string;
@@ -10,54 +11,99 @@ interface Chat {
   status: 'active' | 'paused';
   avatar: string;
   greeting: string;
-  createdAt: Date;
+  createdAt: string;
 }
+
+
+//mysql://u936696961_chatbot:0c&Lv~Ft[O5F@srv1596.hstgr.io:3306/u936696961_chatbot
+
 
 export default function Dashboard() {
   const router = useRouter();
-  const [chats, setChats] = useState<Chat[]>([
-    {
-      id: '1',
-      name: 'Suporte do Site',
-      status: 'active',
-      avatar: '🤖',
-      greeting: 'Olá! Como posso ajudar?',
-      createdAt: new Date()
-    },
-    {
-      id: '2',
-      name: 'FAQ Bot',
-      status: 'paused',
-      avatar: '💡',
-      greeting: 'Bem-vindo ao FAQ!',
-      createdAt: new Date()
-    }
-  ]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+
+  // Buscar chats ao carregar a página
+  useEffect(() => {
+    fetchChats();
+  }, []);
+
+  const fetchChats = async () => {
+    try {
+      const response = await fetch('/api/chats');
+      const data = await response.json();
+      setChats(data);
+    } catch (error) {
+      console.error('Erro ao buscar chats:', error);
+    } 
+  };
 
   const handleCreateChat = () => {
     router.push('/dashboard/create');
   };
 
-  const handleDeleteChat = (id: string) => {
-    setChats(chats.filter(chat => chat.id !== id));
+  const handleDeleteChat = async (id: string) => {
+    try {
+      const response = await fetch(`/api/chats/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setChats(chats.filter(chat => chat.id !== id));
+      }
+    } catch (error) {
+      console.error('Erro ao deletar chat:', error);
+    }
   };
 
-  const handleDuplicateChat = (chat: Chat) => {
-    const newChat = {
-      ...chat,
-      id: Date.now().toString(),
-      name: `${chat.name} (Cópia)`,
-      createdAt: new Date()
-    };
-    setChats([...chats, newChat]);
+  const handleDuplicateChat = async (chat: Chat) => {
+    try {
+      const response = await fetch('/api/chats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: `${chat.name} (Cópia)`,
+          avatar: chat.avatar,
+          greeting: chat.greeting,
+        }),
+      });
+
+      if (response.ok) {
+        const newChat = await response.json();
+        setChats([...chats, newChat]);
+      }
+    } catch (error) {
+      console.error('Erro ao duplicar chat:', error);
+    }
   };
 
-  const handleToggleStatus = (id: string) => {
-    setChats(chats.map(chat => 
-      chat.id === id 
-        ? { ...chat, status: chat.status === 'active' ? 'paused' : 'active' }
-        : chat
-    ));
+  const handleToggleStatus = async (id: string) => {
+    const chat = chats.find(c => c.id === id);
+    if (!chat) return;
+
+    try {
+      const response = await fetch(`/api/chats/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: chat.status === 'active' ? 'paused' : 'active',
+        }),
+      });
+
+      if (response.ok) {
+        setChats(chats.map(c => 
+          c.id === id 
+            ? { ...c, status: c.status === 'active' ? 'paused' : 'active' }
+            : c
+        ));
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status do chat:', error);
+    }
   };
 
   return (
@@ -197,14 +243,31 @@ export default function Dashboard() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
+                      <button
+                        onClick={() => setSelectedChatId(chat.id)}
+                        className="text-gray-400 hover:text-gray-500"
+                        title="Mostrar código de embed"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
+                  {selectedChatId === chat.id && (
+                    <div className="mt-4">
+                      <ChatEmbed chatId={chat.id} showEmbedCode={true} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
           </div>
         </div>
       </main>
+
+      {/* Add Chat Widget */}
+      <ChatEmbed />
     </div>
   );
 } 

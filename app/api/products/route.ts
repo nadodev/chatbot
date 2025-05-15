@@ -1,9 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
+
+interface ChatMessage {
+  role: 'user' | 'model';
+  content: string;
+}
 
 export async function POST(req: Request) {
   try {
@@ -19,7 +22,7 @@ export async function POST(req: Request) {
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
     const chat = model.startChat({
-      history: messages.slice(0, -1).map((msg: any) => ({
+      history: messages.slice(0, -1).map((msg: ChatMessage) => ({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: msg.content,
       })),

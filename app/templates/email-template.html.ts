@@ -69,34 +69,34 @@ export const generateEmailHTML = (
                 <tr>
                   <td style="padding: 30px;">
                     <table width="100%" cellpadding="0" cellspacing="0">
-                      ${chatHistory.map((msg, index) => `
+                      ${chatHistory.map((message) => `
                         <tr>
                           <td style="padding: 10px 0;">
                             <table width="100%" cellpadding="0" cellspacing="0">
                               <tr>
-                                <td align="${msg.type === 'user' ? 'right' : 'left'}">
+                                <td align="${message.type === 'user' ? 'right' : 'left'}">
                                   <div style="
                                     display: inline-block;
                                     max-width: 80%;
                                     padding: 12px 16px;
                                     border-radius: 12px;
-                                    background-color: ${msg.type === 'user' ? '#7c3aed' : '#f3f4f6'};
-                                    color: ${msg.type === 'user' ? '#ffffff' : '#1f2937'};
+                                    background-color: ${message.type === 'user' ? '#7c3aed' : '#f3f4f6'};
+                                    color: ${message.type === 'user' ? '#ffffff' : '#1f2937'};
                                     font-size: 14px;
                                     line-height: 1.5;
                                   ">
-                                    ${msg.content}
+                                    ${message.content}
                                   </div>
                                 </td>
                               </tr>
                               <tr>
-                                <td align="${msg.type === 'user' ? 'right' : 'left'}" style="padding-top: 4px;">
+                                <td align="${message.type === 'user' ? 'right' : 'left'}" style="padding-top: 4px;">
                                   <span style="
                                     font-size: 12px;
                                     color: #6b7280;
-                                    display: ${msg.type === 'user' ? 'block' : 'none'};
+                                    display: ${message.type === 'user' ? 'block' : 'none'};
                                   ">
-                                    ${msg.type === 'user' ? 'Usuário' : ''}
+                                    ${message.type === 'user' ? 'Usuário' : ''}
                                   </span>
                                 </td>
                               </tr>

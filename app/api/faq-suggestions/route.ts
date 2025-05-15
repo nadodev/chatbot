@@ -34,11 +34,6 @@ export async function GET(request: Request) {
         const faqWords = tokenize(faq.question);
         const queryWords = tokenize(query);
         
-        // Verificar se todas as palavras da query estão presentes na FAQ
-        const allWordsMatch = queryWords.every(word => 
-          faqWords.some(faqWord => faqWord.includes(word))
-        );
-
         // Calcular similaridade
         const matchingWords = queryWords.filter(word =>
           faqWords.some(faqWord => faqWord.includes(word))

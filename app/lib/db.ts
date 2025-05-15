@@ -1,7 +1,17 @@
 import { PrismaClient } from '@prisma/client';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const prisma = new PrismaClient();
+// Previne múltiplas instâncias do Prisma Client em desenvolvimento
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
 // Function to get all products
@@ -16,7 +26,7 @@ export async function getAllProducts() {
 }
 
 // Function to get product by ID
-export async function getProductById(id: number) {
+export async function getProductById(id: string) {
   try {
     const product = await prisma.products.findUnique({
       where: { id },
@@ -31,7 +41,7 @@ export async function getProductById(id: number) {
 // Function to create a new product
 export async function createProduct(data: {
   name: string;
-  description?: string;
+  description: string;
   price: number;
   in_stock?: boolean;
 }) {
@@ -47,7 +57,7 @@ export async function createProduct(data: {
 }
 
 // Function to update a product
-export async function updateProduct(id: number, data: {
+export async function updateProduct(id: string, data: {
   name?: string;
   description?: string;
   price?: number;
@@ -66,7 +76,7 @@ export async function updateProduct(id: number, data: {
 }
 
 // Function to delete a product
-export async function deleteProduct(id: number) {
+export async function deleteProduct(id: string) {
   try {
     const product = await prisma.products.delete({
       where: { id },

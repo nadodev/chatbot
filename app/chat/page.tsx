@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { useSettings } from '@/app/contexts/SettingsContext';
 import { useTheme } from '@/app/contexts/ThemeContext';
-import { useAuth } from '@/app/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 import { useChatHistory } from '@/app/contexts/ChatHistoryContext';
 import { useChatWidget } from '@/app/contexts/ChatWidgetContext';
 
@@ -14,11 +11,8 @@ interface Message {
 }
 
 export default function ChatPage() {
-  const router = useRouter();
-  const { user, signOut } = useAuth();
-  const { settings, updateSettings } = useSettings();
   const { theme, setTheme } = useTheme();
-  const { addChat, clearChats } = useChatHistory();
+  const { addChat } = useChatHistory();
   const { isOpen, toggleChat } = useChatWidget();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -29,16 +23,10 @@ export default function ChatPage() {
   const [tempTheme, setTempTheme] = useState(theme);
   const [tempWindowSize, setTempWindowSize] = useState(windowSize);
   const [tempUserName, setTempUserName] = useState(userName);
-  const [isClient, setIsClient] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  // Marcar que estamos no cliente
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   // Carregar configurações do localStorage antes da primeira renderização
   useEffect(() => {
@@ -61,7 +49,7 @@ export default function ChatPage() {
       }
       setMounted(true);
     }
-  }, []);
+  }, [setTheme]);
 
   // Atualizar configurações temporárias quando abrir o modal
   useEffect(() => {

@@ -82,6 +82,7 @@ export default function CreateChat() {
   const [currentStep, setCurrentStep] = useState(1);
   const [config, setConfig] = useState<ChatConfig>(defaultConfig);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleNext = () => {
     if (currentStep < 4) {
@@ -96,8 +97,29 @@ export default function CreateChat() {
   };
 
   const handleSave = async () => {
-    // TODO: Implement save logic
-    router.push('/dashboard');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/chats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config),
+      });
+
+      if (response.ok) {
+        router.push('/dashboard');
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Erro ao criar chat');
+      }
+    } catch (error) {
+      console.error('Erro ao criar chat:', error);
+      alert('Erro ao criar chat');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -460,7 +482,7 @@ export default function CreateChat() {
                         }`}
                         onClick={() => setConfig({
                           ...config,
-                          appearance: { ...config.appearance, position: position.id as any },
+                          appearance: { ...config.appearance, position: position.id as ChatConfig['appearance']['position'] },
                         })}
                       >
                         <div className="flex items-center">
@@ -584,7 +606,7 @@ export default function CreateChat() {
                         name="responseMode"
                         value="complete"
                         checked={config.behavior.responseMode === 'complete'}
-                        onChange={(e) => setConfig({
+                        onChange={() => setConfig({
                           ...config,
                           behavior: { ...config.behavior, responseMode: 'complete' },
                         })}
@@ -601,7 +623,7 @@ export default function CreateChat() {
                         name="responseMode"
                         value="streaming"
                         checked={config.behavior.responseMode === 'streaming'}
-                        onChange={(e) => setConfig({
+                        onChange={() => setConfig({
                           ...config,
                           behavior: { ...config.behavior, responseMode: 'streaming' },
                         })}
@@ -660,9 +682,10 @@ export default function CreateChat() {
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
+                  disabled={isLoading}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50"
                 >
-                  Salvar
+                  {isLoading ? 'Criando...' : 'Criar Chat'}
                 </button>
               )}
             </div>

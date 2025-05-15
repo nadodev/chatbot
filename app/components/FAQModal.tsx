@@ -19,7 +19,6 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<Array<{ type: 'user' | 'bot', content: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [message, setMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'categories' | 'chat'>('categories');
 
@@ -34,8 +33,6 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
         }
       } catch (error) {
         console.error('Erro ao buscar categorias:', error);
-      } finally {
-        setIsLoadingCategories(false);
       }
     };
 

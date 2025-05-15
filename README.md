@@ -97,3 +97,41 @@ chat-app/
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Nova funcionalidade: Consulta SQL Inteligente
+
+Agora o chat suporta consultas em linguagem natural para bancos de dados utilizando o LangChain:
+
+1. Quando o usuário faz perguntas sobre dados, o sistema usa LangChain para gerar consultas SQL
+2. Estas consultas são executadas diretamente no banco de dados
+3. Os resultados exatos são retornados para o usuário
+
+### Configuração:
+
+1. Crie um arquivo `.env` na raiz do projeto e adicione sua API key da OpenAI:
+```
+OPENAI_API_KEY=sua-api-key-aqui
+```
+
+2. Reinicie o servidor após adicionar a API key.
+
+### Como usar:
+
+Quando uma fonte de banco de dados for adicionada ao chat, os usuários podem fazer perguntas diretas como:
+- "Mostre todos os produtos com preço acima de 100"
+- "Quais são as FAQs mais recentes?"
+- "Liste todos os clientes do estado de São Paulo"
+
+O sistema irá:
+1. Identificar a intenção da pergunta
+2. Gerar uma consulta SQL apropriada
+3. Executar a consulta no banco de dados
+4. Formatar os resultados de maneira amigável para o usuário
+
+### Segurança:
+
+O sistema implementa várias camadas de segurança:
+- Valida todas as consultas SQL antes da execução
+- Permite apenas operações SELECT
+- Bloqueia palavras-chave perigosas
+- Implementa timeout para consultas longas

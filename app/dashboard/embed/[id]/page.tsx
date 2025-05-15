@@ -37,23 +37,30 @@ const defaultConfig: ChatConfig = {
 };
 
 export default function EmbedCode({ params }: { params: { id: string } }) {
-  const router = useRouter();
   const [config, setConfig] = useState<ChatConfig>(defaultConfig);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // TODO: Fetch chat data from API
     const fetchChat = async () => {
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const response = await fetch(`/api/chats/${params.id}`);
+        if (!response.ok) throw new Error('Failed to fetch chat');
+        
+        const chat = await response.json();
+        
+        // Parse appearance and behavior from JSON strings
+        const appearance = chat.appearance ? JSON.parse(chat.appearance as string) : defaultConfig.appearance;
+        
         setConfig({
-          ...defaultConfig,
-          id: params.id,
-          name: 'Suporte do Site',
-          avatar: '🤖',
-          greeting: 'Olá! Como posso ajudar?',
+          id: chat.id,
+          name: chat.name,
+          avatar: chat.avatar,
+          greeting: chat.greeting,
+          appearance: {
+            ...defaultConfig.appearance,
+            ...appearance,
+          },
         });
         setLoading(false);
       } catch (error) {
@@ -67,29 +74,8 @@ export default function EmbedCode({ params }: { params: { id: string } }) {
 
   const getEmbedCode = () => {
     const baseUrl = window.location.origin;
-    return `<script>
-  window.CHAT_CONFIG = {
-    id: "${config.id}",
-    name: "${config.name}",
-    avatar: "${config.avatar}",
-    greeting: "${config.greeting}",
-    appearance: {
-      primaryColor: "${config.appearance.primaryColor}",
-      userBubbleColor: "${config.appearance.userBubbleColor}",
-      aiBubbleColor: "${config.appearance.aiBubbleColor}",
-      font: "${config.appearance.font}",
-      position: "${config.appearance.position}",
-      animation: "${config.appearance.animation}",
-      darkMode: ${config.appearance.darkMode}
-    }
-  };
-  (function(d, t) {
-    var s = d.createElement(t);
-    s.src = "${baseUrl}/widget.js";
-    s.async = true;
-    d.head.appendChild(s);
-  })(document, "script");
-</script>`;
+    return `<div id="chat-widget-container"></div>
+<script src="${baseUrl}/api/widget/${config.id}" async></script>`;
   };
 
   const handleCopy = () => {
@@ -181,18 +167,11 @@ export default function EmbedCode({ params }: { params: { id: string } }) {
               </div>
 
               <div>
-                <h3 className="text-lg font-medium text-gray-900">Personalização</h3>
+                <h3 className="text-lg font-medium text-gray-900">Informações do Chat</h3>
                 <div className="mt-2 text-sm text-gray-500">
-                  <p>Você pode personalizar a aparência do widget ajustando as configurações no objeto CHAT_CONFIG:</p>
-                  <ul className="list-disc pl-5 mt-2 space-y-1">
-                    <li>primaryColor: Cor principal do widget</li>
-                    <li>userBubbleColor: Cor das bolhas de mensagem do usuário</li>
-                    <li>aiBubbleColor: Cor das bolhas de mensagem do assistente</li>
-                    <li>font: Fonte do texto</li>
-                    <li>position: Posição do widget (bottom-right, floating, popup)</li>
-                    <li>animation: Animação de entrada (slide-up, fade-in, bounce)</li>
-                    <li>darkMode: Modo escuro (true/false)</li>
-                  </ul>
+                  <p>Este código incorpora o chat <strong>{config.name}</strong> em seu site.</p>
+                  <p>Todas as configurações personalizadas (cores, aparência, mensagens) já estão incluídas.</p>
+                  <p>O widget será único para este chat e não afetará outros widgets em seu site.</p>
                 </div>
               </div>
 

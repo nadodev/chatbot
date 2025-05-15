@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ChatPreview from './ChatPreview';
 
 interface EmbedCodeProps {
   chatId: string;
@@ -39,7 +40,7 @@ export default function EmbedCode({ chatId, config }: EmbedCodeProps) {
     }
   };
 </script>
-<script src="${window.location.origin}/widget.js"></script>`;
+<script src="${window.location.origin}/chat-widget.js"></script>`;
 
     return code;
   };
@@ -76,7 +77,7 @@ export default function EmbedCode({ chatId, config }: EmbedCodeProps) {
         <h4 className="text-sm font-medium text-blue-800 mb-2">Instructions</h4>
         <ol className="list-decimal list-inside space-y-2 text-sm text-blue-700">
           <li>Copy the embed code above</li>
-          <li>Paste it into your website's HTML, just before the closing &lt;/body&gt; tag</li>
+          <li>Paste it into your website&apos;s HTML, just before the closing &lt;/body&gt; tag</li>
           <li>The chat widget will appear on your website according to the selected position</li>
           <li>You can customize the appearance in the chat settings</li>
         </ol>
